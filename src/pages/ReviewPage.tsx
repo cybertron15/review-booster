@@ -4,9 +4,7 @@ import { Star } from 'lucide-react';
 import { useReview } from '../contexts/ReviewContext';
 import { Business, supabase } from '../lib/supabaseClient';
 import LoadingSpinner from '../components/LoadingSpinner';
-
-// UUID v4 regex pattern
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import NotFoundPage from './NotFoundPage';
 
 function ReviewPage() {
   const { restaurantId } = useParams();
@@ -27,7 +25,9 @@ function ReviewPage() {
       // Validate restaurantId is a valid UUID before making the request);
       
       if (!restaurantId) {
-        navigate('/not-found');
+        console.log('No restaurant ID provided',restaurantId);
+        setLoading(false);
+        // navigate('/not-found');
         return;
       }
       
@@ -35,14 +35,17 @@ function ReviewPage() {
                 .from('businesses')
                 .select('*')
                 .eq('id', restaurantId)
-                .order('name');
+      console.log(data,restaurantId);
       
       if (!data) {
-        navigate('/not-found');
-        return;
+        console.log('No data found',data);
+        setLoading(false);
+        return
+        // navigate('/not-found');
+   
       }
       
-      setBusiness(data);
+      setBusiness(data[0]);
       setLoading(false);
     };
 
@@ -97,6 +100,7 @@ function ReviewPage() {
   }
 
   return (
+    restaurantId ?
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-6">
         <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">
@@ -173,7 +177,8 @@ function ReviewPage() {
           </button>
         </form>
       </div>
-    </div>
+    </div>:
+    <NotFoundPage />
   );
 }
 

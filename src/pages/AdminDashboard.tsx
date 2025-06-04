@@ -2,7 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useReview } from '../contexts/ReviewContext';
 import { BarChart, PieChart, Star } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useParams } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient';
+import { Review } from '../types';
 
+type ReviewStats = {
+  id: string,
+  restaurantId: string,
+  rating: number,
+  review: string,
+  name: string,
+  email: string,
+  timestamp: string,
+  googleReviewed: boolean
+}
 // Mock review data for demonstration purposes
 const MOCK_REVIEWS = [
   {
@@ -69,6 +82,7 @@ const MOCK_REVIEWS = [
 
 const AdminDashboard: React.FC = () => {
   const { restaurants, isLoading } = useReview();
+  const { restaurantId } = useParams();
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>('all');
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,11 +104,20 @@ const AdminDashboard: React.FC = () => {
       setLoading(true);
 
       try {
-        // In a real app, this would fetch from Supabase
-        // For demo purposes, we'll use mock data
-        const filteredReviews = selectedRestaurant === 'all'
-          ? MOCK_REVIEWS
-          : MOCK_REVIEWS.filter(r => r.restaurantId === selectedRestaurant);
+        if (!restaurantId) {
+          console.log('No restaurant ID provided', restaurantId);
+          setLoading(false);
+          // navigate('/not-found');
+          return;
+        }
+
+        const { data } = await supabase
+          .from('responses')
+          .select('*')
+          .eq('business_id', restaurantId)
+        console.log(data, restaurantId);
+
+        const filteredReviews = data as ReviewStats[]
 
         setReviews(filteredReviews);
 
@@ -238,7 +261,6 @@ const AdminDashboard: React.FC = () => {
                 <div
                   className="absolute inset-0 rounded-full border-8 border-indigo-600"
                   style={{
-                    // clipPath: `polygon(0 0, 100% 0, 100% 100%, 0% 100%)`,
                     clipPath: `path('M18,18 L82,18 A64,64 0 ${stats.totalReviews > 0 ? (stats.googleReviews / stats.totalReviews) * 360 > 180 ? 1 : 0 : 0},1 ${stats.totalReviews > 0 ? Math.cos((stats.googleReviews / stats.totalReviews) * Math.PI * 2) * 64 + 50 : 50},${stats.totalReviews > 0 ? Math.sin((stats.googleReviews / stats.totalReviews) * Math.PI * 2) * 64 + 50 : 50} L50,50 Z')`,
                   }}
                 ></div>
@@ -334,8 +356,8 @@ const AdminDashboard: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${review.googleReviewed
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
                             }`}>
                             {review.googleReviewed ? 'Posted' : 'Not posted'}
                           </span>
